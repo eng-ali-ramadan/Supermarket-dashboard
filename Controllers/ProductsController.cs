@@ -1,0 +1,85 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using SupermarketDashboard.Data;
+using SupermarketDashboard.Models;
+
+namespace SupermarketDashboard.Controllers;
+
+public class ProductsController : Controller
+{
+    private readonly SupermarketContext _context;
+
+    public ProductsController(SupermarketContext context)
+    {
+        _context = context;
+    }
+
+    // GET: /Products
+    public async Task<IActionResult> Index()
+    {
+        var products = await _context.Products.OrderBy(p => p.Name).ToListAsync();
+        return View(products);
+    }
+
+    // GET: /Products/Create
+    public IActionResult Create()
+    {
+        return View(new Product());
+    }
+
+    // POST: /Products/Create
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(Product product)
+    {
+        if (product.Price <= 0)
+            ModelState.AddModelError(nameof(product.Price), "السعر لازم يكون أكبر من صفر");
+
+        if (!ModelState.IsValid)
+            return View(product);
+
+        _context.Products.Add(product);
+        await _context.SaveChangesAsync();
+        return RedirectToAction(nameof(Index));
+    }
+
+    // GET: /Products/Edit/5
+    public async Task<IActionResult> Edit(int id)
+    {
+        var product = await _context.Products.FindAsync(id);
+        if (product == null) return NotFound();
+        return View(product);
+    }
+
+    // POST: /Products/Edit/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, Product product)
+    {
+        if (id != product.Id) return BadRequest();
+
+        if (product.Price <= 0)
+            ModelState.AddModelError(nameof(product.Price), "السعر لازم يكون أكبر من صفر");
+
+        if (!ModelState.IsValid)
+            return View(product);
+
+        _context.Update(product);
+        await _context.SaveChangesAsync();
+        return RedirectToAction(nameof(Index));
+    }
+
+    // POST: /Products/Delete/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var product = await _context.Products.FindAsync(id);
+        if (product != null)
+        {
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
+        }
+        return RedirectToAction(nameof(Index));
+    }
+}

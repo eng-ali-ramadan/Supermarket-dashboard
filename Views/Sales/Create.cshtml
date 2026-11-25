@@ -1,0 +1,227 @@
+@model SupermarketDashboard.Models.Sale
+@using System.Globalization
+@using SupermarketDashboard.Models
+@{
+    var products = (List<Product>)ViewBag.Products;
+    var sales = (List<Sale>)ViewBag.Sales;
+    var expenses = (List<Expense>)ViewBag.Expenses;
+
+    var totalRevenue = sales.Sum(s => s.Total);
+    var totalExpenses = expenses.Sum(e => e.Amount);
+    var netProfit = totalRevenue - totalExpenses;
+    var todayRevenue = sales.Where(s => s.SoldAt.Date == DateTime.Today).Sum(s => s.Total);
+    var todayCount = sales.Count(s => s.SoldAt.Date == DateTime.Today);
+}
+
+@if (TempData["Error"] is string err)
+{
+    <div class="alert alert-danger">@err</div>
+}
+
+<!-- ============ الإحصائيات ============ -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted">إجمالي الإيرادات</h6>
+                <h4 class="text-success">@totalRevenue.ToString("0.00") جنيه</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted">إجمالي المصروفات</h6>
+                <h4 class="text-danger">@totalExpenses.ToString("0.00") جنيه</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted">صافي الربح</h6>
+                <h4 class="@(netProfit >= 0 ? "text-primary" : "text-danger")">@netProfit.ToString("0.00") جنيه</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted">إيرادات النهارده (@todayCount بيعة)</h6>
+                <h4>@todayRevenue.ToString("0.00") جنيه</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ فورم البيعة الجديدة ============ -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header"><strong>بيعة جديدة</strong></div>
+    <div class="card-body">
+        <form asp-action="Create" method="post" style="max-width:420px">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="mb-3">
+                <label asp-for="ProductId" class="form-label">المنتج</label>
+                <select asp-for="ProductId" class="form-select" id="productSelect">
+                    <option value="">-- اختار منتج --</option>
+                    @foreach (var p in products)
+                    {
+                        <option value="@p.Id" data-price="@p.Price.ToString(CultureInfo.InvariantCulture)">
+                            @p.Name
+                        </option>
+                    }
+                </select>
+                <span asp-validation-for="ProductId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="UnitPrice" class="form-label">سعر البيع</label>
+                <input asp-for="UnitPrice" class="form-control" id="priceInput" />
+                <span asp-validation-for="UnitPrice" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Quantity" class="form-label">الكمية</label>
+                <input asp-for="Quantity" class="form-control" id="qtyInput" />
+                <span asp-validation-for="Quantity" class="text-danger"></span>
+            </div>
+
+            <p><strong>الإجمالي: <span id="totalText">0.00</span> جنيه</strong></p>
+
+            <button type="submit" class="btn btn-success">تأكيد البيعة</button>
+        </form>
+    </div>
+</div>
+
+<!-- ============ المصروفات ============ -->
+@* <div class="card shadow-sm mb-4">
+    <div class="card-header"><strong>المصروفات (مرتبات، بضاعة، إيجار...)</strong></div>
+    <div class="card-body">
+        <form action="/Expenses/Create" method="post" class="row g-2 align-items-end mb-3">
+            @Html.AntiForgeryToken()
+            <div class="col-md-4">
+                <label class="form-label">البيان</label>
+                <input type="text" name="Title" class="form-control" placeholder="مثلاً: مرتب أحمد، شراء بضاعة" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">المبلغ</label>
+                <input type="number" name="Amount" class="form-control" step="0.01" min="0.01" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">التاريخ</label>
+                <input type="date" name="Date" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-danger w-100">إضافة مصروف</button>
+            </div>
+        </form>
+
+        @if (!expenses.Any())
+        {
+            <p class="text-muted mb-0">مفيش مصروفات لسه.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>البيان</th>
+                            <th>المبلغ</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var e in expenses)
+                        {
+                            <tr>
+                                <td>@e.Date.ToString("yyyy-MM-dd")</td>
+                                <td>@e.Title</td>
+                                <td>@e.Amount.ToString("0.00")</td>
+                                <td>
+                                    <form asp-controller="Expenses" asp-action="Delete" asp-route-id="@e.Id" method="post" style="display:inline"
+                                          onsubmit="return confirm('متأكد إنك عايز تمسح المصروف ده؟');">
+                                        <button type="submit" class="btn btn-sm btn-danger">حذف</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div> *@
+
+<!-- ============ كل عمليات البيع ============ -->
+<div class="card shadow-sm">
+    <div class="card-header"><strong>كل عمليات البيع</strong></div>
+    <div class="card-body">
+        @if (!sales.Any())
+        {
+            <p class="text-muted mb-0">مفيش بيعات لسه.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>المنتج</th>
+                            <th>الكمية</th>
+                            <th>سعر البيع</th>
+                            <th>الإجمالي</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in sales)
+                        {
+                            <tr>
+                                <td>@s.SoldAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>@s.Product?.Name</td>
+                                <td>@s.Quantity</td>
+                                <td>@s.UnitPrice.ToString("0.00")</td>
+                                <td>@s.Total.ToString("0.00")</td>
+                                <td>
+                                    <a asp-action="Edit" asp-route-id="@s.Id" class="btn btn-sm btn-warning">تعديل</a>
+                                    <form asp-action="Delete" asp-route-id="@s.Id" method="post" style="display:inline"
+                                          onsubmit="return confirm('متأكد إنك عايز تمسح البيعة دي؟');">
+                                        <button type="submit" class="btn btn-sm btn-danger">حذف</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const productSelect = document.getElementById('productSelect');
+    const priceInput   = document.getElementById('priceInput');
+    const qtyInput     = document.getElementById('qtyInput');
+    const totalText    = document.getElementById('totalText');
+
+    function updateTotal() {
+        const price = parseFloat(priceInput.value) || 0;
+        const qty   = parseInt(qtyInput.value) || 0;
+        totalText.textContent = (price * qty).toFixed(2);
+    }
+
+    productSelect.addEventListener('change', () => {
+        const selected = productSelect.options[productSelect.selectedIndex];
+        priceInput.value = selected.dataset.price || '';
+        updateTotal();
+    });
+
+    priceInput.addEventListener('input', updateTotal);
+    qtyInput.addEventListener('input', updateTotal);
+</script>
+}

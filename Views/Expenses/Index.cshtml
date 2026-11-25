@@ -1,0 +1,100 @@
+@model List<SupermarketDashboard.Models.Expense>
+@{
+    var totalExpenses = Model.Sum(e => e.Amount);
+    var thisMonth = Model.Where(e => e.Date.Year == DateTime.Today.Year && e.Date.Month == DateTime.Today.Month).Sum(e => e.Amount);
+}
+
+<h2 class="mb-3">المصروفات</h2>
+
+@if (TempData["Error"] is string err)
+{
+    <div class="alert alert-danger">@err</div>
+}
+
+<!-- ============ الإحصائيات ============ -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted">إجمالي المصروفات</h6>
+                <h4 class="text-danger">@totalExpenses.ToString("0.00") جنيه</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card text-center shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted">مصروفات الشهر ده</h6>
+                <h4 class="text-danger">@thisMonth.ToString("0.00") جنيه</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ فورم إضافة مصروف ============ -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header"><strong>إضافة مصروف</strong></div>
+    <div class="card-body">
+        <form action="/Expenses/Create" method="post" class="row g-2 align-items-end">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="fromExpensesPage" value="true" />
+            <div class="col-md-4">
+                <label class="form-label">البيان</label>
+                <input type="text" name="Title" class="form-control" placeholder="سبب الصرف  " />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">المبلغ</label>
+                <input type="number" name="Amount" class="form-control" step="0.01" min="0.01" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">التاريخ</label>
+                <input type="date" name="Date" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-danger w-100">إضافة</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============ جدول المصروفات ============ -->
+<div class="card shadow-sm">
+    <div class="card-header"><strong>كل المصروفات</strong></div>
+    <div class="card-body">
+        @if (!Model.Any())
+        {
+            <p class="text-muted mb-0">مفيش مصروفات لسه.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>البيان</th>
+                            <th>المبلغ</th>
+                            <th>إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var e in Model)
+                        {
+                            <tr>
+                                <td>@e.Date.ToString("yyyy-MM-dd")</td>
+                                <td>@e.Title</td>
+                                <td>@e.Amount.ToString("0.00")</td>
+                                <td>
+                                    <form asp-controller="Expenses" asp-action="Delete" asp-route-id="@e.Id" method="post" style="display:inline"
+                                          onsubmit="return confirm('متأكد إنك عايز تمسح المصروف ده؟');">
+                                        <button type="submit" class="btn btn-sm btn-danger">حذف</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

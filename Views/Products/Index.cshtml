@@ -1,0 +1,31 @@
+@model List<SupermarketDashboard.Models.Product>
+
+<h2>المنتجات</h2>
+
+<a asp-action="Create" class="btn btn-primary mb-3">إضافة منتج</a>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>الاسم</th>
+            <th>السعر</th>
+            <th>إجراءات</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in Model)
+        {
+            <tr>
+                <td>@p.Name</td>
+                <td>@p.Price.ToString("0.00") جنيه</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-warning">تعديل</a>
+                    <form asp-action="Delete" asp-route-id="@p.Id" method="post" style="display:inline"
+                          onsubmit="return confirm('متأكد إنك عايز تمسح المنتج ده؟');">
+                        <button type="submit" class="btn btn-sm btn-danger">حذف</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
